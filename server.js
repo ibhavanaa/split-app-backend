@@ -1,18 +1,19 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-require('dotenv').config();
+const express = require("express");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const authRoutes = require("./routes/authRoute");
+const groupRoutes = require("./routes/groupRoute");
+const expenseRoutes = require("./routes/expenseRoute");
 
-const expenseRoutes = require('./routes/expenses');
-const settlementRoutes = require('./routes/settlements');
-
+dotenv.config();
 const app = express();
 
-app.use(cors());
 app.use(express.json());
 
-app.use('/expenses', expenseRoutes);
-app.use('/', settlementRoutes);  // for /balances, /settlements, /people
+// Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/groups", groupRoutes);
+app.use("/api/groups", expenseRoutes); // note: expenses are under groups
 
 const PORT = process.env.PORT || 5000;
 

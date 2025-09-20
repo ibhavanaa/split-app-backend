@@ -1,44 +1,64 @@
-const Expense = require('../models/Expense');
+const Expense = require("../models/Expense");
+const Group = require("../models/Groups");
 
-exports.getExpenses = async (req, res) => {
-  const expenses = await Expense.find();
-  res.json({ success: true, data: expenses });
-};
-
+// Add an expense
 exports.addExpense = async (req, res) => {
   try {
-    const { amount, description, paid_by, participants, split_type, split_values } = req.body;
+    const { groupId } = req.params;
+    const { amount, description, paidBy, participants, splitType, splitValues } = req.body;
 
-    if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
-    if (!description || !paid_by) return res.status(400).json({ message: "Missing fields" });
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ success: false, message: "Group not found" });
 
-    const expense = new Expense({ amount, description, paid_by, participants, split_type, split_values });
-    await expense.save();
+    // Calculate splits
+    let splits = [];
+    if (splitType === "equal") {
+      const share = amount / participants.length;
+      splits = participants.map(p => ({ user: p, amountOwed: share }));
+    } else if (splitType === "exact") {
+      splits = Object.entries(splitValues).map(([user, val]) => ({ user, amountOwed: val }));
+    } else if (splitType === "percentage") {
+      splits = Object.entries(splitValues).map(([user, val]) => ({ user, amountOwed: (val / 100) * amount }));
+    }
 
-    res.status(201).json({ success: true, data: expense, message: "Expense added successfully" });
+    // Save expense
+    const expense = await Expense.create({
+      group: groupId,
+      amount,
+      description,
+      paidBy,
+      splits,
+      splitType
+    });
+
+    // Update balances inside group
+    splits.forEach(s => {
+      if (s.user.toString() !== paidBy.toString()) {
+        const key = `${s.user}_${paidBy}`;
+        const prev = group.balances.get(key) || 0;
+        group.balances.set(key, prev + s.amountOwed);
+      }
+    });
+
+    await group.save();
+
+    res.status(201).json({ success: true, message: "Expense added", data: expense });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Error saving expense" });
+    res.status(500).json({ success: false, message: "Error adding expense", error: error.message });
   }
 };
 
-exports.updateExpense = async (req, res) => {
+// Get all expenses in group
+exports.getExpenses = async (req, res) => {
   try {
-    const updated = await Expense.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updated) return res.status(404).json({ message: "Expense not found" });
+    const { groupId } = req.params;
 
-    res.json({ success: true, data: updated });
-  } catch {
-    res.status(500).json({ success: false, message: "Error updating" });
-  }
-};
+    const expenses = await Expense.find({ group: groupId })
+      .populate("paidBy", "name")
+      .populate("splits.user", "name");
 
-exports.deleteExpense = async (req, res) => {
-  try {
-    const deleted = await Expense.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: "Not found" });
-
-    res.json({ success: true, message: "Deleted successfully" });
-  } catch {
-    res.status(500).json({ success: false, message: "Delete failed" });
+    res.json({ success: true, data: expenses });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error fetching expenses", error: error.message });
   }
 };
