@@ -2,12 +2,26 @@ const Group = require("../models/Groups");
 const User = require("../models/User");
 
 // Create a new group
+// Create a new group
 exports.createGroup = async (req, res) => {
   try {
     const { name, members } = req.body;
 
     if (!name || !members || members.length < 2) {
       return res.status(400).json({ success: false, message: "Group name and at least 2 members required" });
+    }
+
+    // Check if a group with the same set of members already exists
+    const existingGroup = await Group.findOne({
+      members: { $all: members, $size: members.length }
+    });
+
+    if (existingGroup) {
+      return res.status(400).json({
+        success: false,
+        message: "A group with the same members already exists",
+        data: existingGroup
+      });
     }
 
     const group = await Group.create({ name, members, balances: {} });
@@ -17,6 +31,7 @@ exports.createGroup = async (req, res) => {
     res.status(500).json({ success: false, message: "Error creating group", error: error.message });
   }
 };
+
 
 // Add a member to group
 exports.addMember = async (req, res) => {
