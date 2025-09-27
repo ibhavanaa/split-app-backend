@@ -1,11 +1,20 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useContext } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import API from "../api/axios";
+import { AuthContext } from "../context/AuthContext";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [msg, setMsg] = useState("");
   const navigate = useNavigate();
+  const { token, login } = useContext(AuthContext);
+
+  // 🔐 Redirect if already logged in
+  useEffect(() => {
+    if (token) {
+      navigate("/groups");
+    }
+  }, [token, navigate]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -13,12 +22,13 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMsg("");
+
     try {
       const res = await API.post("/auth/login", form);
-      localStorage.setItem("token", res.data.token); // save JWT
-      navigate("/groups"); // redirect to groups page
+      login(res.data.user, res.data.token); // ✅ sets context + localStorage + redirects
     } catch (err) {
-      setMsg(err.response?.data?.message || "Login failed");
+      setMsg(err.response?.data?.message || "❌ Login failed. Check your credentials.");
     }
   };
 
@@ -26,11 +36,30 @@ export default function Login() {
     <div>
       <h2>Login</h2>
       <form onSubmit={handleSubmit}>
-        <input name="email" placeholder="Email" onChange={handleChange} required />
-        <input name="password" type="password" placeholder="Password" onChange={handleChange} required />
+        <input
+          name="email"
+          type="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={handleChange}
+          required
+        />
+        <input
+          name="password"
+          type="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={handleChange}
+          required
+        />
         <button type="submit">Login</button>
       </form>
-      <p>{msg}</p>
+
+      {msg && <p style={{ color: "red" }}>{msg}</p>}
+
+      <p>
+        Don’t have an account? <Link to="/register">Register here</Link>
+      </p>
     </div>
   );
 }

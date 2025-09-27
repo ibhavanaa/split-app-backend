@@ -1,12 +1,20 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useContext } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import API from "../api/axios";
+import { AuthContext } from "../context/AuthContext";
 
 export default function Register() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [msg, setMsg] = useState("");
-  const [debug, setDebug] = useState(""); // 🔎 for showing raw errors
   const navigate = useNavigate();
+  const { token } = useContext(AuthContext);
+
+  // 🔐 Redirect if already logged in
+  useEffect(() => {
+    if (token) {
+      navigate("/groups");
+    }
+  }, [token, navigate]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -14,20 +22,14 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      console.log("➡️ Sending register request:", form);
-      const res = await API.post("/auth/register", form);
-      console.log("✅ Register success:", res.data);
+    setMsg("");
 
-      setMsg("Registered successfully! Redirecting to login...");
-      setDebug("");
+    try {
+      await API.post("/auth/register", form);
+      setMsg("✅ Registered successfully! Redirecting to login...");
       setTimeout(() => navigate("/login"), 1500);
     } catch (err) {
-      console.error("❌ Register error:", err);
-      console.error("❌ Backend error response:", err.response?.data);
-
-      setMsg(err.response?.data?.message || "Error registering");
-      setDebug(JSON.stringify(err.response?.data || err.message, null, 2)); // 🔎 show raw error
+      setMsg(err.response?.data?.message || "❌ Registration failed. Try again.");
     }
   };
 
@@ -37,7 +39,8 @@ export default function Register() {
       <form onSubmit={handleSubmit}>
         <input
           name="name"
-          placeholder="Name"
+          placeholder="Full Name"
+          value={form.name}
           onChange={handleChange}
           required
         />
@@ -45,6 +48,7 @@ export default function Register() {
           name="email"
           type="email"
           placeholder="Email"
+          value={form.email}
           onChange={handleChange}
           required
         />
@@ -52,19 +56,18 @@ export default function Register() {
           name="password"
           type="password"
           placeholder="Password"
+          value={form.password}
           onChange={handleChange}
           required
         />
         <button type="submit">Register</button>
       </form>
-      <p>{msg}</p>
 
-      {/* 🔎 Debug output */}
-      {debug && (
-        <pre style={{ background: "#f4f4f4", padding: "10px", marginTop: "10px" }}>
-          {debug}
-        </pre>
-      )}
+      {msg && <p style={{ color: msg.startsWith("✅") ? "green" : "red" }}>{msg}</p>}
+
+      <p>
+        Already have an account? <Link to="/login">Login here</Link>
+      </p>
     </div>
   );
 }
