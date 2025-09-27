@@ -1,12 +1,19 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+const cors = require("cors");   // ✅ add this
 const authRoutes = require("./routes/authRoute");
 const groupRoutes = require("./routes/groupRoute");
 const expenseRoutes = require("./routes/expenseRoute");
 
 dotenv.config();
 const app = express();
+
+// ✅ Enable CORS for frontend
+app.use(cors({
+  origin: "http://localhost:5173", // your React frontend
+  credentials: true
+}));
 
 app.use(express.json());
 

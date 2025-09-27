@@ -26,8 +26,8 @@ export default function Login() {
     <div>
       <h2>Login</h2>
       <form onSubmit={handleSubmit}>
-        <input name="email" placeholder="Email" onChange={handleChange} />
-        <input name="password" type="password" placeholder="Password" onChange={handleChange} />
+        <input name="email" placeholder="Email" onChange={handleChange} required />
+        <input name="password" type="password" placeholder="Password" onChange={handleChange} required />
         <button type="submit">Login</button>
       </form>
       <p>{msg}</p>
