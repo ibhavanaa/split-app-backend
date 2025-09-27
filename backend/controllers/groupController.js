@@ -2,36 +2,24 @@ const Group = require("../models/Groups");
 const User = require("../models/User");
 
 // Create a new group
-// Create a new group
 exports.createGroup = async (req, res) => {
   try {
     const { name, members } = req.body;
 
-    if (!name || !members || members.length < 2) {
-      return res.status(400).json({ success: false, message: "Group name and at least 2 members required" });
+    if (!name) {
+      return res.status(400).json({ success: false, message: "Group name is required" });
     }
 
-    // Check if a group with the same set of members already exists
-    const existingGroup = await Group.findOne({
-      members: { $all: members, $size: members.length }
-    });
+    // ✅ Default members array: just the creator
+    const memberList = members && members.length > 0 ? members : [req.user.id];
 
-    if (existingGroup) {
-      return res.status(400).json({
-        success: false,
-        message: "A group with the same members already exists",
-        data: existingGroup
-      });
-    }
-
-    const group = await Group.create({ name, members, balances: {} });
+    const group = await Group.create({ name, members: memberList, balances: {} });
 
     res.status(201).json({ success: true, message: "Group created successfully", data: group });
   } catch (error) {
     res.status(500).json({ success: false, message: "Error creating group", error: error.message });
   }
 };
-
 
 // Add a member to group
 exports.addMember = async (req, res) => {
