@@ -9,7 +9,7 @@ export default function Groups() {
   const fetchGroups = async () => {
     try {
       const res = await API.get("/groups");
-      setGroups(res.data);
+      setGroups(res.data.data); // ✅ use data.data
     } catch (err) {
       console.error("Error fetching groups", err);
     }
@@ -19,7 +19,7 @@ export default function Groups() {
     if (!groupName.trim()) return;
     try {
       const res = await API.post("/groups", { name: groupName });
-      setGroups([...groups, res.data]);
+      setGroups([...groups, res.data.data]); // ✅ use data.data
       setGroupName("");
     } catch (err) {
       console.error("Error creating group", err);
