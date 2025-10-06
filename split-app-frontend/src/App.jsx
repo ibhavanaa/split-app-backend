@@ -9,7 +9,16 @@ import { AuthContext } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
-  const { user, token } = useContext(AuthContext);
+  const { token, loading } = useContext(AuthContext);
+
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <Routes>
@@ -19,7 +28,7 @@ function App() {
         element={token ? <Navigate to="/dashboard" replace /> : <Navigate to="/register" replace />} 
       />
 
-      {/* 🌐 Public routes - redirect to dashboard if already logged in */}
+      {/* 🌐 Public routes - only accessible when NOT logged in */}
       <Route
         path="/register"
         element={!token ? <Register /> : <Navigate to="/dashboard" replace />}
@@ -29,7 +38,7 @@ function App() {
         element={!token ? <Login /> : <Navigate to="/dashboard" replace />}
       />
 
-      {/* 🔐 Protected routes */}
+      {/* 🔐 Protected routes - only accessible when logged in */}
       <Route
         path="/dashboard"
         element={

@@ -5,32 +5,34 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem("token") || null);
+  const [token, setToken] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // 🧠 Sync context state with localStorage when token changes
+  // Check for existing auth on app start
   useEffect(() => {
-    if (token) {
+    const checkAuth = () => {
+      const storedToken = localStorage.getItem("token");
       const storedUser = localStorage.getItem("user");
-      if (storedUser) {
+      
+      if (storedToken && storedUser) {
+        setToken(storedToken);
         setUser(JSON.parse(storedUser));
-      } else {
-        // ❌ Edge case: token exists but user is missing → clear state
-        logout();
       }
-    }
-  }, [token]);
+      setLoading(false);
+    };
 
-  // ✅ Called after successful login
+    checkAuth();
+  }, []);
+
   const login = (userData, jwtToken) => {
     localStorage.setItem("token", jwtToken);
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
     setToken(jwtToken);
-    navigate("/groups");
+    navigate("/dashboard");
   };
 
-  // ✅ Clear session
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -40,7 +42,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
