@@ -1,81 +1,63 @@
-import { Routes, Route, Navigate, Link } from "react-router-dom";
-import "./App.css";
-
-// Import pages
-import Register from "./pages/Register.jsx";
-import Login from "./pages/Login.jsx";
-import Groups from "./pages/Group.jsx";
-import GroupDetail from "./pages/GroupDetail.jsx";
-
-// Import context + ProtectedRoute
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useContext } from "react";
-import { AuthContext } from "./context/AuthContext.jsx";
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import Dashboard from "./pages/Dashboard";
+import GroupDetail from "./pages/GroupDetail";
+import AddGroup from "./pages/AddGroup";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import { AuthContext } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
-  const { user, logout } = useContext(AuthContext);
+  const { user, token } = useContext(AuthContext);
 
   return (
-    <div className="App">
-      {/* Top navigation */}
-      <nav className="p-4 bg-gray-100 flex justify-between">
-        <div className="flex gap-4">
-          {!user ? (
-            <>
-              <Link to="/register" className="text-blue-600">
-                Register
-              </Link>
-              <Link to="/login" className="text-blue-600">
-                Login
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link to="/groups" className="text-blue-600">
-                Groups
-              </Link>
-              <button
-                onClick={logout}
-                className="text-red-600 font-semibold ml-4"
-              >
-                Logout
-              </button>
-            </>
-          )}
-        </div>
-      </nav>
+    <Routes>
+      {/* ✅ Default route - redirect based on auth status */}
+      <Route 
+        path="/" 
+        element={token ? <Navigate to="/dashboard" replace /> : <Navigate to="/register" replace />} 
+      />
 
-      {/* Routes */}
-      <Routes>
-        {/* Default route → Register */}
-        <Route path="/" element={<Navigate to="/register" />} />
+      {/* 🌐 Public routes - redirect to dashboard if already logged in */}
+      <Route
+        path="/register"
+        element={!token ? <Register /> : <Navigate to="/dashboard" replace />}
+      />
+      <Route
+        path="/login"
+        element={!token ? <Login /> : <Navigate to="/dashboard" replace />}
+      />
 
-        {/* Public routes */}
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
+      {/* 🔐 Protected routes */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/add-group"
+        element={
+          <ProtectedRoute>
+            <AddGroup />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/groups/:id"
+        element={
+          <ProtectedRoute>
+            <GroupDetail />
+          </ProtectedRoute>
+        }
+      />
 
-        {/* Protected routes */}
-        <Route
-          path="/groups"
-          element={
-            <ProtectedRoute>
-              <Groups />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/groups/:id"
-          element={
-            <ProtectedRoute>
-              <GroupDetail />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Fallback */}
-        <Route path="*" element={<h2>Page Not Found</h2>} />
-      </Routes>
-    </div>
+      {/* 🛑 404 fallback */}
+      <Route path="*" element={<h2 className="text-center mt-10">Page Not Found</h2>} />
+    </Routes>
   );
 }
 
